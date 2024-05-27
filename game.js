@@ -584,10 +584,10 @@ const player = {
     facingRight: true,
     walkFrame: 0,
     frameTimer: 0,
-    frameDelta: 0.09,
+    frameDelta: 0.1,
     frameCount: 4,
 
-    walkSpeed: 48,
+    walkSpeed: 32,
 
     move: function () {
         let movementX = 0;

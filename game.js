@@ -7,6 +7,15 @@ function aabbCollision(xA, yA, wA, hA, xB, yB, wB, hB) {
 }
 
 
+function addNoteLink(url) {
+    const e = document.createElement("div");
+    e.innerHTML = `<a href=\"${url}\" target=\"_blank\">${url}</a>`;
+    const notes = document.getElementById("notes");
+    notes.appendChild(e);
+    notes.scrollTo(0, notes.scrollHeight);
+}
+
+
 const camera = {
     x: 0.0,
     y: 0.0,
@@ -64,18 +73,18 @@ function drawBackground() {
 }
 
 
-const dialogueQueue = [];
+let dialogueQueue = [];
 let displayedDialogue = null;
 
-function dialogueText(text) {
+function dialogueText(text, handler) {
     return {
-        type: "text", value: text
+        type: "text", value: text, handler: handler
     };
 }
 
-function dialogueChoice(choices) {
+function dialogueChoice(choices, handler) {
     return {
-        type: "choice", value: choices
+        type: "choice", value: choices, handler: handler
     };
 }
 
@@ -87,8 +96,29 @@ function dialogueStart(dialogue) {
     displayedDialogue = dialogue;
     const d = document.getElementById("dialogue");
     d.hidden = false;
-    d.innerHTML = dialogue.value;
-    setTimeout(() => dialogueEnd(), 5000);
+    if(dialogue.handler) {
+        dialogue.handler();
+    }
+    switch(dialogue.type) {
+        case "choice": {
+            d.innerHTML = "";
+            for(const choice in dialogue.value) {
+                const c = document.createElement("p");
+                c.innerHTML = choice;
+                c.onclick = () => {
+                    const after = dialogueQueue;
+                    dialogueQueue = [...dialogue.value[choice]];
+                    dialogueQueue.push(...after);
+                    dialogueEnd();
+                };
+                d.appendChild(c);
+            }
+        } break;
+        case "text": {
+            d.innerHTML = dialogue.value;
+            setTimeout(() => dialogueEnd(), 3000);
+        } break;
+    }
 }
 
 function dialogueEnd() {
@@ -120,8 +150,21 @@ function createInteraction(x, y, message) {
     return { x: x, y: y, message: message };
 }
 
+const NPC_IMAGE = engine.load(imageFile("res/npc.png"));
+
 function createNPC(x, y, id, dialogue) {
-    return { x: x, y: y, id: id, dialogue: dialogue };
+    return { 
+        x: x, y: y, 
+        width: 11,
+        height: 19,
+        id: id, 
+        interacts: false,
+        frame: 0,
+        frameTimer: 0,
+        frameDelta: 1.0,
+        frameCount: 4,
+        dialogue: dialogue 
+    };
 }
 
 const booths = [
@@ -137,7 +180,8 @@ const booths = [
         ],
         [
             createInteraction(20, 30, "Seems like it's a prop from the game...") // lamp
-        ]
+        ],
+        []
     ),
     createBooth(
         engine.load(imageFile("res/currant-booth.png")), 
@@ -156,7 +200,8 @@ const booths = [
                 "\"Currant is a multi-paradigm, high-Level programming language."
                     + " It emphasizes simplicity and consistency.\""
             ) // board
-        ]
+        ],
+        []
     ),
     createBooth(
         engine.load(imageFile("res/discord-booth.png")), 
@@ -166,6 +211,7 @@ const booths = [
             createCollider(2, 10, 22, 36), // board
             createCollider(18, 44, 14, 36), // desk
         ],
+        [],
         []
     ),
     createBooth(
@@ -195,7 +241,8 @@ const booths = [
                 "\"Gera is a language that attempts to be simple"
                     + " while still being nice to use.\""
             ) // right board
-        ]
+        ],
+        []
     ),
     createBooth(
         engine.load(imageFile("res/lania-booth.png")),
@@ -213,7 +260,8 @@ const booths = [
                 "There is a terminal on screen."
                     + " Looks like 'lania' has been executed a number of times."
             ) // TV
-        ]
+        ],
+        []
     ),
     createBooth(
         engine.load(imageFile("res/rosequartz-booth.png")), 
@@ -247,14 +295,12 @@ const booths = [
                     ],
                     "Where?": [
                         dialogueText(
-                            "You can get it at <a href=\"https://typesafeschwalbe.itch.io/rosequartz\">"
-                                + "https://typesafeschwalbe.itch.io/rosequartz</a>."
+                            "You can get it on Itch.io.",
+                            () => addNoteLink("https://typesafeschwalbe.itch.io/rosequartz")
                         ),
                         dialogueText(
-                            "And there are some examples at"
-                                + " <a href=\"https://github.com/typesafeschwalbe/rosequartz-examples\">"
-                                + "https://github.com/typesafeschwalbe/rosequartz-examples</a>"
-                                + " too, I guess..."
+                            "And there are some usage examples on Github too, I guess...",
+                            () => addNoteLink("https://github.com/typesafeschwalbe/rosequartz-examples")
                         )
                     ]
                 })
@@ -283,7 +329,8 @@ const booths = [
                 "A small chip is in the center of the summoning circle."
                     + " Looking closer, it reads \"Made in China\"."
             )
-        ]
+        ],
+        []
     )
 ];
 
@@ -330,6 +377,69 @@ function drawBooths() {
     }
 }
 
+function updateBoothNPCs() {
+    walkedSinceInteract |= player.walking;
+    if(!walkedSinceInteract || player.walking) {
+        return;
+    }
+    for(const booth of booths) {
+        for(const npc of booth.npcs) {
+            npc.frameTimer += engine.deltaTime;
+            if(npc.frameTimer >= npc.frameDelta) {
+                npc.frame = (npc.frame + 1) % npc.frameCount;
+                npc.frameTimer %= npc.frameDelta;
+            }
+            npc.interacts = INTERACTION_DISTANCE > Math.hypot(
+                booth.x + npc.x - player.x,
+                booth.y + npc.y - player.y
+            );
+            if(npc.interacts) {
+                for(const d of npc.dialogue) {
+                    dialogueStart(d);
+                }
+                walkedSinceInteract = false;
+            }
+        }
+    }
+}
+
+function drawBoothNPCsBehind() {
+    for(const b of booths) {
+        for(const n of b.npcs) {
+            if(b.y + n.y > player.y) {
+                continue;
+            }
+            engine.drawImage(
+                NPC_IMAGE.value,
+                camera.onScreenX(b.x + n.x - n.width / 2), 
+                camera.onScreenY(b.y + n.y - n.height),
+                camera.onScreenS(n.width), camera.onScreenS(n.height),
+                n.interacts? 0 : (n.frame + 1) * n.width,
+                n.id * n.height,
+                n.width, n.height
+            );
+        }
+    }
+}
+
+function drawBoothNPCsFront() {
+    for(const b of booths) {
+        for(const n of b.npcs) {
+            if(b.y + n.y <= player.y) {
+                continue;
+            }
+            engine.drawImage(
+                NPC_IMAGE.value,
+                camera.onScreenX(b.x + n.x - n.width / 2), 
+                camera.onScreenY(b.y + n.y - n.height),
+                camera.onScreenS(n.width), camera.onScreenS(n.height),
+                n.interacts? 0 : (n.frame + 1) * n.width,
+                n.id * n.height,
+                n.width, n.height
+            );
+        }
+    }
+}
 
 function collidesWithWorld(x, y, w, h) {
     return collidesWithBooth(x, y, w, h)
@@ -359,9 +469,6 @@ const player = {
     walkSpeed: 32,
 
     move: function () {
-        if(displayedDialogue !== null) {
-            return;
-        }
         let movementX = 0;
         let movementY = 0;
         if(engine.keyPressed("ArrowLeft") || engine.keyPressed("KeyA")) {
@@ -377,7 +484,7 @@ const player = {
             movementY += 1;
         }
         const movementLen = Math.hypot(movementX, movementY);
-        this.walking = movementLen > 0;
+        this.walking = movementLen > 0 && displayedDialogue === null;
         if(movementX > 0) { 
             this.facingRight = true;
         }
@@ -430,6 +537,7 @@ engine.gameloop(() => {
     // update
     player.move();
     doBoothInteractions();
+    updateBoothNPCs();
     // render
     camera.distance = 150;
     camera.x = player.x;
@@ -437,5 +545,7 @@ engine.gameloop(() => {
     camera.computeOffsets();
     drawBackground();
     drawBooths();
+    drawBoothNPCsBehind();
     player.draw();
+    drawBoothNPCsFront();
 });

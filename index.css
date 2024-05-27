@@ -1,0 +1,59 @@
+
+#game {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+}
+
+#dialogue {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 30vh;
+    background: #000000;
+    z-index: 1;
+    color: #ffffff;
+    padding: 2rem;
+    box-sizing: border-box;
+    font-size: 1.5rem;
+    font-family: monospace;
+}
+
+#dialogue p {
+    border: 1px solid #ffffff;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+#dialogue p:hover {
+    cursor: pointer;
+    background: #ffffff;
+    color: #000000;
+}
+
+#notes {
+    position: absolute;
+    width: 50vmin;
+    height: 50vmin;
+    overflow-y: scroll;
+    color: #000000;
+    
+    font-family: monospace;
+    padding: 1rem;
+    box-sizing: border-box;
+    z-index: 2;
+    font-size: 0.9rem;
+}
+
+#notes a {
+    background: #ffffff55;
+    color: #000000;
+}
+
+#notes a:hover {
+    color: #ffffff;
+    background: #000000;
+}

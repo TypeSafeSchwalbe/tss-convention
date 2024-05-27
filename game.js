@@ -68,15 +68,15 @@ const dialogueQueue = [];
 let displayedDialogue = null;
 
 function dialogueText(text) {
-    dialogueStart({
+    return {
         type: "text", value: text
-    });
+    };
 }
 
 function dialogueChoice(choices) {
-    dialogueStart({
+    return {
         type: "choice", value: choices
-    });
+    };
 }
 
 function dialogueStart(dialogue) {
@@ -84,11 +84,16 @@ function dialogueStart(dialogue) {
         dialogueQueue.push(dialogue);
         return;
     }
-    alert(dialogue.value);
-    dialogueEnd();
+    displayedDialogue = dialogue;
+    const d = document.getElementById("dialogue");
+    d.hidden = false;
+    d.innerHTML = dialogue.value;
+    setTimeout(() => dialogueEnd(), 5000);
 }
 
 function dialogueEnd() {
+    const d = document.getElementById("dialogue");
+    d.hidden = true;
     displayedDialogue = null;
     if(dialogueQueue.length > 0) {
         dialogueStart(dialogueQueue.shift());
@@ -96,13 +101,14 @@ function dialogueEnd() {
 }
 
 
-function createBooth(image, x, y, colliders, interactions) {
+function createBooth(image, x, y, colliders, interactions, npcs) {
     return {
         image: image,
         x: x * 16, 
         y: y * 16,
         colliders: colliders,
-        interactions: interactions
+        interactions: interactions,
+        npcs: npcs
     }
 }
 
@@ -112,6 +118,10 @@ function createCollider(x, y, w, h) {
 
 function createInteraction(x, y, message) {
     return { x: x, y: y, message: message };
+}
+
+function createNPC(x, y, id, dialogue) {
+    return { x: x, y: y, id: id, dialogue: dialogue };
 }
 
 const booths = [
@@ -221,6 +231,34 @@ const booths = [
                 "The TV shows a loading screen."
                     + " A small crystal is spinning in the bottom right."
             ) // TV
+        ],
+        [
+            createNPC(12, 66, 0, [
+                dialogueText("Rose Quartz, huh..."),
+                dialogueText("What do you want to know?"),
+                dialogueChoice({
+                    "What?": [
+                        dialogueText("Well, Rose Quartz is a game engine."),
+                        dialogueText("You can use it to like..."),
+                        dialogueText("make games and stuff.")
+                    ],
+                    "Who?": [
+                        dialogueText("TypeSafeSchwalbe made it.")
+                    ],
+                    "Where?": [
+                        dialogueText(
+                            "You can get it at <a href=\"https://typesafeschwalbe.itch.io/rosequartz\">"
+                                + "https://typesafeschwalbe.itch.io/rosequartz</a>."
+                        ),
+                        dialogueText(
+                            "And there are some examples at"
+                                + " <a href=\"https://github.com/typesafeschwalbe/rosequartz-examples\">"
+                                + "https://github.com/typesafeschwalbe/rosequartz-examples</a>"
+                                + " too, I guess..."
+                        )
+                    ]
+                })
+            ]) // desk
         ]
     ),
     createBooth(
@@ -274,7 +312,7 @@ function doBoothInteractions() {
             if(d > INTERACTION_DISTANCE) {
                 continue;
             }
-            dialogueText(i.message);
+            dialogueStart(dialogueText(i.message));
             walkedSinceInteract = false;
         }
     }
@@ -321,6 +359,9 @@ const player = {
     walkSpeed: 32,
 
     move: function () {
+        if(displayedDialogue !== null) {
+            return;
+        }
         let movementX = 0;
         let movementY = 0;
         if(engine.keyPressed("ArrowLeft") || engine.keyPressed("KeyA")) {

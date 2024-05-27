@@ -587,7 +587,7 @@ const player = {
     frameDelta: 0.1,
     frameCount: 4,
 
-    walkSpeed: 32,
+    walkSpeed: 40,
 
     move: function () {
         let movementX = 0;

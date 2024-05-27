@@ -11,6 +11,11 @@ function addNoteLink(url) {
     const e = document.createElement("div");
     e.innerHTML = `<a href=\"${url}\" target=\"_blank\">${url}</a>`;
     const notes = document.getElementById("notes");
+    for(const note of notes.children) {
+        if(note.innerHTML === e.innerHTML) {
+            return;
+        }
+    }
     notes.appendChild(e);
     notes.scrollTo(0, notes.scrollHeight);
 }
@@ -579,10 +584,10 @@ const player = {
     facingRight: true,
     walkFrame: 0,
     frameTimer: 0,
-    frameDelta: 0.1,
+    frameDelta: 0.09,
     frameCount: 4,
 
-    walkSpeed: 32,
+    walkSpeed: 48,
 
     move: function () {
         let movementX = 0;

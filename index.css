@@ -39,7 +39,7 @@
     width: 50vmin;
     height: 50vmin;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     color: #000000;
     font-family: monospace;
     padding: 1rem;

@@ -160,7 +160,7 @@ function createNPC(x, y, id, dialogue) {
         id: id, 
         interacts: false,
         frame: 0,
-        frameTimer: 0,
+        frameTimer: Math.random(),
         frameDelta: 1.0,
         frameCount: 4,
         dialogue: dialogue 
@@ -181,7 +181,16 @@ const booths = [
         [
             createInteraction(20, 30, "Seems like it's a prop from the game...") // lamp
         ],
-        []
+        [
+            createNPC(33, 72, 7, [
+                dialogueText("Mommy said I am not allowed to play Countryside."),
+                dialogueText("But it's not that scary, so it's probably fine."),
+                dialogueText(
+                    "You wanna play Countryside as well?",
+                    () => addNoteLink("https://typesafeschwalbe.itch.io/countryside")
+                )
+            ]) // desk
+        ]
     ),
     createBooth(
         engine.load(imageFile("res/currant-booth.png")), 
@@ -201,7 +210,18 @@ const booths = [
                     + " It emphasizes simplicity and consistency.\""
             ) // board
         ],
-        []
+        [
+            createNPC(63, 65, 6, [
+                dialogueText("Currant certainly is one of the programming languages of all time."),
+                dialogueText("It was the first full-fledged programming language TypeSafeSchwalbe ever made."),
+                dialogueText("That's also why it features some..."),
+                dialogueText("...interesting design decisions."),
+                dialogueText(
+                    "You can check out the Currant website if you're interested.",
+                    () => addNoteLink("https://currant.netlify.app/")
+                )
+            ]) // desk
+        ]
     ),
     createBooth(
         engine.load(imageFile("res/discord-booth.png")), 
@@ -212,7 +232,12 @@ const booths = [
             createCollider(18, 44, 14, 36), // desk
         ],
         [],
-        []
+        [
+            createNPC(12, 64, 1, [
+                dialogueText("Yes, TypeSafeSchwalbe is on Discord."),
+                dialogueText("His username is 'typesafeschwalbe'.")
+            ]) // desk
+        ]
     ),
     createBooth(
         engine.load(imageFile("res/gera-booth.png")), 
@@ -229,7 +254,10 @@ const booths = [
             createCollider(148, 89, 28, 44) // right board
         ],
         [
-            createInteraction(49, 28, "Looks like some Gera code."), // TV
+            createInteraction(
+                49, 28, 
+                "Looks like some Gera code is on screen."
+            ), // TV
             createInteraction(
                 128, 103, 
                 "\"Gera - A high-level, procedural,"
@@ -242,7 +270,26 @@ const booths = [
                     + " while still being nice to use.\""
             ) // right board
         ],
-        []
+        [
+            createNPC(35, 118, 2, [
+                dialogueText("The Gera programming language..."),
+                dialogueText(
+                    "TypeSafeSchwalbe developed it over the course of over 8 months..."
+                ),
+                dialogueText(
+                    "and it is one of the projects he is most proud of."
+                ),
+                dialogueText(
+                    "You can learn more on the Gera website.",
+                    () => addNoteLink("https://geralang.netlify.app/")
+                )
+            ]), // left desk
+            createNPC(158, 69, 3, [
+                dialogueText("I will talk about Gera for hours if you let me."),
+                dialogueText("Gera is so simple and elegant, I adore it."),
+                dialogueText("In fact, I am playing around with it right now.")
+            ])
+        ]
     ),
     createBooth(
         engine.load(imageFile("res/lania-booth.png")),
@@ -261,7 +308,16 @@ const booths = [
                     + " Looks like 'lania' has been executed a number of times."
             ) // TV
         ],
-        []
+        [
+            createNPC(51, 88, 8, [
+                dialogueText("Lania is a turn-based strategy game made by TypeSafeSchwalbe."),
+                dialogueText("It's written from scratch in C and runs completely within the terminal."),
+                dialogueText(
+                    "You can play it yourself by downloading it from Github.",
+                    () => addNoteLink("https://github.com/typesafeschwalbe/lania")
+                )
+            ]) // desk
+        ]
     ),
     createBooth(
         engine.load(imageFile("res/rosequartz-booth.png")), 
@@ -330,7 +386,45 @@ const booths = [
                     + " Looking closer, it reads \"Made in China\"."
             )
         ],
-        []
+        [
+            // left side of circle
+            createNPC(66, 44, 4, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            createNPC(47, 61, 4, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            createNPC(47, 87, 4, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            createNPC(65, 105, 4, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            // right side of circle
+            createNPC(91, 46, 5, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            createNPC(109, 61, 5, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            createNPC(110, 86, 5, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            createNPC(95, 104, 5, [
+                dialogueText("O magne silicium, redibit creator tuus.")
+            ]),
+            // desk
+            createNPC(34, 113, 5, [
+                dialogueText(
+                    "We believe in the return of the ancient civilization that"
+                        + " once tricked rocks into thinking for them."
+                ),
+                dialogueText(
+                    "They instructed these rocks in cryptic runes, which we seek to decipher.",
+                    () => addNoteLink("https://github.com/typesafeschwalbe/silicon-runes")
+                )
+            ])
+        ]
     )
 ];
 
@@ -338,6 +432,14 @@ function collidesWithBooth(x, y, w, h) {
     for(const b of booths) {
         for(const c of b.colliders) {
             if(aabbCollision(x, y, w, h, c.x + b.x, c.y + b.y, c.w, c.h)) {
+                return true;
+            }
+        }
+        for(const n of b.npcs) {
+            if(aabbCollision(
+                x, y, w, h, 
+                b.x + n.x - n.width / 2, b.y + n.y - 1, n.width, 1
+            )) {
                 return true;
             }
         }
@@ -379,9 +481,6 @@ function drawBooths() {
 
 function updateBoothNPCs() {
     walkedSinceInteract |= player.walking;
-    if(!walkedSinceInteract || player.walking) {
-        return;
-    }
     for(const booth of booths) {
         for(const npc of booth.npcs) {
             npc.frameTimer += engine.deltaTime;
@@ -393,7 +492,7 @@ function updateBoothNPCs() {
                 booth.x + npc.x - player.x,
                 booth.y + npc.y - player.y
             );
-            if(npc.interacts) {
+            if(npc.interacts && walkedSinceInteract && !player.walking) {
                 for(const d of npc.dialogue) {
                     dialogueStart(d);
                 }

@@ -88,12 +88,15 @@ function dialogueChoice(choices, handler) {
     };
 }
 
-function dialogueStart(dialogue) {
+function dialogueStart(dialogue, origin) {
     if(displayedDialogue !== null) {
-        dialogueQueue.push(dialogue);
+        dialogueQueue.push({ dialogue: dialogue, origin: origin });
         return;
     }
-    displayedDialogue = dialogue;
+    displayedDialogue = { 
+        dialogue: dialogue, origin: origin,
+        timer: 0, endTime: Infinity
+    };
     const d = document.getElementById("dialogue");
     d.hidden = false;
     if(dialogue.handler) {
@@ -107,7 +110,10 @@ function dialogueStart(dialogue) {
                 c.innerHTML = choice;
                 c.onclick = () => {
                     const after = dialogueQueue;
-                    dialogueQueue = [...dialogue.value[choice]];
+                    dialogueQueue = [];
+                    for(const cd of dialogue.value[choice]) {
+                        dialogueQueue.push({ dialogue: cd, origin: origin });
+                    }
                     dialogueQueue.push(...after);
                     dialogueEnd();
                 };
@@ -116,8 +122,18 @@ function dialogueStart(dialogue) {
         } break;
         case "text": {
             d.innerHTML = dialogue.value;
-            setTimeout(() => dialogueEnd(), 3000);
+            displayedDialogue.endTime = 3.0;
         } break;
+    }
+}
+
+function dialogueUpdate() {
+    if(displayedDialogue === null) {
+        return;
+    }
+    displayedDialogue.timer += engine.deltaTime;
+    if(displayedDialogue.timer >= displayedDialogue.endTime) {
+        dialogueEnd();
     }
 }
 
@@ -126,7 +142,8 @@ function dialogueEnd() {
     d.hidden = true;
     displayedDialogue = null;
     if(dialogueQueue.length > 0) {
-        dialogueStart(dialogueQueue.shift());
+        const qi = dialogueQueue.shift();
+        dialogueStart(qi.dialogue, qi.origin);
     }
 }
 
@@ -461,7 +478,7 @@ function doBoothInteractions() {
             if(d > INTERACTION_DISTANCE) {
                 continue;
             }
-            dialogueStart(dialogueText(i.message));
+            dialogueStart(dialogueText(i.message), { x: b.x + i.x, y: b.y + i.y });
             walkedSinceInteract = false;
         }
     }
@@ -494,7 +511,7 @@ function updateBoothNPCs() {
             );
             if(npc.interacts && walkedSinceInteract && !player.walking) {
                 for(const d of npc.dialogue) {
-                    dialogueStart(d);
+                    dialogueStart(d, { x: booth.x + npc.x, y: booth.y + npc.y });
                 }
                 walkedSinceInteract = false;
             }
@@ -583,7 +600,10 @@ const player = {
             movementY += 1;
         }
         const movementLen = Math.hypot(movementX, movementY);
-        this.walking = movementLen > 0 && displayedDialogue === null;
+        this.walking = movementLen > 0;
+        if(this.walking) {
+            document.getElementById("move-prompt").hidden = true;
+        }
         if(movementX > 0) { 
             this.facingRight = true;
         }
@@ -609,6 +629,16 @@ const player = {
             }
             this.x = destX;
             this.y = destY;
+        }
+        if(displayedDialogue !== null) {
+            const ddd = Math.hypot(
+                displayedDialogue.origin.x - this.x, 
+                displayedDialogue.origin.y - this.y
+            );
+            if(ddd >= INTERACTION_DISTANCE) {
+                dialogueQueue = [];
+                dialogueEnd();
+            }
         }
     },
 
@@ -637,6 +667,7 @@ engine.gameloop(() => {
     player.move();
     doBoothInteractions();
     updateBoothNPCs();
+    dialogueUpdate();
     // render
     camera.distance = 150;
     camera.x = player.x;

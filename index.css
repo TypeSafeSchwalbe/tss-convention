@@ -57,3 +57,15 @@
     color: #ffffff;
     background: #000000;
 }
+
+#move-prompt {
+    position: absolute;
+    top: 50vh;
+    left: 50vw;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    color: #ffffff;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 2rem;
+}
